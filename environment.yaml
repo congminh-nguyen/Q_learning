@@ -1,0 +1,29 @@
+name: calibration
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - numpy
+  - scipy
+  - matplotlib
+  - pandas
+  - sympy
+  - numba
+  - ipython
+  - jupyter
+  - jupyterlab
+  - seaborn
+  - plotly
+  - scikit-learn
+  - astropy  # For Lambert equation approximation in orbital mechanics
+  - poliastro  # For orbital mechanics and Lambert problem solving
+  - pykep  # Another package for Lambert problem and astrodynamics
+  - mayavi  # For 3D visualization
+  - vtk  # For 3D visualization backend
+  - pip
+  - pip:
+    - pylambert  # Specialized Lambert solver
+    - pyvista  # For 3D visualization
+    - networkx  # For graph-based models
+    - tqdm  # For progress bars

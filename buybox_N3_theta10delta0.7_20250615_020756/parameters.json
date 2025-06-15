@@ -1,0 +1,16 @@
+{
+    "N": 3,
+    "K": 1,
+    "c": 5,
+    "q_H": 50.0,
+    "q_L": 30.0,
+    "theta": 10,
+    "Delta": 0.75,
+    "alpha_initial": 0.2,
+    "beta_exploration": 1e-05,
+    "delta_rl": 0.7,
+    "grid_size": 10,
+    "tstable": 100000,
+    "tmax": 10000000,
+    "seed": 5
+}
