@@ -252,7 +252,7 @@ def run_buybox_analysis(base_params: dict, m_values: list, num_sessions: int = 1
         all_m_results.append(run_multiple_sessions(current_m_params, num_sessions))
 
     timestamp = time.strftime("%Y%m%d_%H%M%S")
-    output_dir = f"buybox_N{base_params['N']}_theta{base_params['theta']}_{timestamp}"
+    output_dir = f"buybox_N{base_params['N']}_theta{base_params['theta']}_delta{base_params['delta_rl']}_{timestamp}"
     os.makedirs(output_dir, exist_ok=True)
 
     with open(os.path.join(output_dir, "results.json"), 'w') as f:

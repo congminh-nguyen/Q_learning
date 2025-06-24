@@ -17,9 +17,9 @@ def main():
         c=5, 
         q_H=50.0, 
         q_L=30.0,
-        theta=1, 
+        theta=5, 
         Delta=0.75, 
-        alpha_initial=0.2,
+        alpha_initial=0.15,
         beta_exploration=1e-5,
         delta_rl=0.7, 
         grid_size=10, 
@@ -32,7 +32,7 @@ def main():
     m_values_to_test = [1, 2, 3] 
     
     # Number of sessions per m value
-    num_sessions_per_m = 50
+    num_sessions_per_m = 100
     
     # Create output directory for results
     output_dir = "simulation_runs_output"

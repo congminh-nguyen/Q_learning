@@ -715,26 +715,35 @@ def _generate_heatmap_data_q_ratio(theta_range, q_h_ratio_range, m_vals, fixed_p
 
 def plot_welfare_heatmap(df, m_vals, fixed_params, delta_vmin=None, delta_vmax=None):
     """
-    Plot heatmaps for welfare, profit ratio, and collusion threshold over theta and Delta.
+    Plot heatmaps for welfare and collusion threshold over theta and Delta.
     """
     if df.empty:
         print("Warning: Input DataFrame is empty. Skipping plot generation.")
         return
+
+    # Set global font sizes for axes, ticks, and legends (even bigger)
+    plt.rcParams.update({
+        "font.size": 26,
+        "axes.labelsize": 30,
+        "axes.titlesize": 34,
+        "xtick.labelsize": 24,
+        "ytick.labelsize": 24,
+        "legend.fontsize": 30,
+        "figure.titlesize": 36,
+    })
 
     N = fixed_params.get('N', 'N/A')
     theta_vals = sorted(df['theta'].unique())
     Delta_vals = sorted(df['Delta'].unique())
     num_m = len(m_vals)
 
-    fig, axes = plt.subplots(num_m, 4, figsize=(19, 4.8 * num_m), dpi=120, layout='constrained', squeeze=False)
+    # Only 3 columns: competitive welfare, collusive welfare, collusion threshold
+    fig, axes = plt.subplots(num_m, 3, figsize=(20, 7 * num_m), dpi=120, layout='constrained', squeeze=False)
 
     all_welfare_vals = pd.concat([df["normalized_welfare_comp"], df["normalized_welfare_mono"]]).dropna()
     welfare_min = all_welfare_vals.min() if not all_welfare_vals.empty else 0
     welfare_max = all_welfare_vals.max() if not all_welfare_vals.empty else 1
     shared_welfare_norm = mcolors.Normalize(vmin=welfare_min, vmax=welfare_max)
-    
-    ratio_vals = df["profit_ratio"].dropna()
-    ratio_norm = mcolors.Normalize(vmin=ratio_vals.min(), vmax=ratio_vals.max()) if not ratio_vals.empty else mcolors.Normalize(1, 2)
 
     delta_cmap = plt.get_cmap('Greens', 512)
     if delta_vmin is not None and delta_vmax is not None:
@@ -747,65 +756,110 @@ def plot_welfare_heatmap(df, m_vals, fixed_params, delta_vmin=None, delta_vmax=N
     shared_delta_norm = mcolors.Normalize(vmin=delta_global_min, vmax=delta_global_max)
 
     # Set a much larger, bold, easy-to-read font for contour labels (no fontweight/family in clabel)
-    contour_label_fontsize = 15  # much bigger
-    contour_label_path_effects = [path_effects.withStroke(linewidth=4, foreground='black')]
+    contour_label_fontsize = 32  # even bigger
+    contour_label_path_effects = [path_effects.withStroke(linewidth=7, foreground='black')]
+
+    # --- Compute representative y-ticks for Delta ---
+    # Only denote representative values on y axis (e.g., min, median, max)
+    if len(Delta_vals) > 2:
+        # Use min, median, max
+        rep_Delta_ticks = [Delta_vals[0], Delta_vals[len(Delta_vals)//2], Delta_vals[-1]]
+    else:
+        rep_Delta_ticks = Delta_vals
+
+    # Place the y-axis label (Delta) further left to avoid being close to m row labels
+    y_label_x = -0.02 if num_m > 1 else 0.04
 
     for idx, m in enumerate(m_vals):
         m_df = df[df["m"] == m]
-        ax_comp, ax_coll, ax_profit, ax_delta = axes[idx, 0], axes[idx, 1], axes[idx, 2], axes[idx, 3]
+        ax_comp, ax_coll, ax_delta = axes[idx, 0], axes[idx, 1], axes[idx, 2]
 
-        row_label = f"$m = {m}$\n(No Effective Buy Box)" if m == N else f"$m = {m}$"
-        axes[idx, 0].text(-0.35, 0.5, row_label, transform=axes[idx, 0].transAxes, ha='center', va='center', fontsize=14, rotation=90)
+        # Place m label further left to avoid overlap with y-axis and y-axis label
+        row_label = f"$\\bf{{m = {m}}}$\n(No Effective Buy Box)" if m == N else f"$\\bf{{m = {m}}}$"
+        axes[idx, 0].text(-0.68, 0.5, row_label, transform=axes[idx, 0].transAxes, ha='center', va='center', fontsize=38, rotation=90, fontweight='bold')
 
         pivot_comp = m_df.pivot_table(index="Delta", columns="theta", values="normalized_welfare_comp")
-        comp_mappable = ax_comp.imshow(pivot_comp, aspect='auto', origin='lower', cmap='magma', norm=shared_welfare_norm, extent=[min(theta_vals), max(theta_vals), min(Delta_vals), max(Delta_vals)], interpolation='bilinear')
-        contour_comp = ax_comp.contour(theta_vals, Delta_vals, pivot_comp, levels=4, colors='white', linewidths=1.5, alpha=0.8)
-        labels_comp = ax_comp.clabel(contour_comp, inline=True, fmt='%.2f', manual=None, fontsize=contour_label_fontsize)
+        comp_mappable = ax_comp.imshow(
+            pivot_comp, aspect='auto', origin='lower', cmap='magma', norm=shared_welfare_norm,
+            extent=[min(theta_vals), max(theta_vals), min(Delta_vals), max(Delta_vals)], interpolation='bilinear'
+        )
+        contour_comp = ax_comp.contour(
+            theta_vals, Delta_vals, pivot_comp, levels=4, colors='white', linewidths=3, alpha=0.8
+        )
+        labels_comp = ax_comp.clabel(
+            contour_comp, inline=True, fmt='%.2f', manual=None, fontsize=contour_label_fontsize
+        )
         plt.setp(labels_comp, path_effects=contour_label_path_effects, color='white')
 
         pivot_mono = m_df.pivot_table(index="Delta", columns="theta", values="normalized_welfare_mono")
-        mono_mappable = ax_coll.imshow(pivot_mono, aspect='auto', origin='lower', cmap='magma', norm=shared_welfare_norm, extent=[min(theta_vals), max(theta_vals), min(Delta_vals), max(Delta_vals)], interpolation='bilinear')
-        contour_mono = ax_coll.contour(theta_vals, Delta_vals, pivot_mono, levels=4, colors='white', linewidths=1.5, alpha=0.8)
-        labels_mono = ax_coll.clabel(contour_mono, inline=True, fmt='%.2f', manual=None, fontsize=contour_label_fontsize)
+        mono_mappable = ax_coll.imshow(
+            pivot_mono, aspect='auto', origin='lower', cmap='magma', norm=shared_welfare_norm,
+            extent=[min(theta_vals), max(theta_vals), min(Delta_vals), max(Delta_vals)], interpolation='bilinear'
+        )
+        contour_mono = ax_coll.contour(
+            theta_vals, Delta_vals, pivot_mono, levels=4, colors='white', linewidths=3, alpha=0.8
+        )
+        labels_mono = ax_coll.clabel(
+            contour_mono, inline=True, fmt='%.2f', manual=None, fontsize=contour_label_fontsize
+        )
         plt.setp(labels_mono, path_effects=contour_label_path_effects, color='white')
-        
-        pivot_profit = m_df.pivot_table(index="Delta", columns="theta", values="profit_ratio")
-        profit_mappable = ax_profit.imshow(pivot_profit, aspect='auto', origin='lower', cmap='YlGnBu', norm=ratio_norm, extent=[min(theta_vals), max(theta_vals), min(Delta_vals), max(Delta_vals)], interpolation='bilinear')
-        contour_profit = ax_profit.contour(theta_vals, Delta_vals, pivot_profit, levels=4, colors='white', linewidths=1.5, alpha=0.8)
-        labels_profit = ax_profit.clabel(contour_profit, inline=True, fmt='%.2f', manual=None, fontsize=contour_label_fontsize)
-        plt.setp(labels_profit, path_effects=contour_label_path_effects, color='white')
 
         pivot_delta = m_df.pivot_table(index="Delta", columns="theta", values="delta_star")
-        delta_mappable = ax_delta.imshow(pivot_delta, aspect='auto', origin='lower', cmap=delta_cmap, norm=shared_delta_norm, extent=[min(theta_vals), max(theta_vals), min(Delta_vals), max(Delta_vals)], interpolation='bilinear')
+        delta_mappable = ax_delta.imshow(
+            pivot_delta, aspect='auto', origin='lower', cmap=delta_cmap, norm=shared_delta_norm,
+            extent=[min(theta_vals), max(theta_vals), min(Delta_vals), max(Delta_vals)], interpolation='bilinear'
+        )
         if "delta_star" in m_df and m_df["delta_star"].notna().any():
-            CS = ax_delta.contour(theta_vals, Delta_vals, pivot_delta.values, levels=3, colors='white', linewidths=2)
-            clabels = ax_delta.clabel(CS, inline=True, fmt='%.3f', manual=None, fontsize=contour_label_fontsize)
-            plt.setp(clabels, path_effects=[path_effects.withStroke(linewidth=5, foreground='black')], color='white')
+            CS = ax_delta.contour(
+                theta_vals, Delta_vals, pivot_delta.values, levels=3, colors='white', linewidths=4
+            )
+            # For m=1, use 1 decimal; otherwise, use 2 decimals
+            if m == 1:
+                fmt_str = '%.1f'
+            else:
+                fmt_str = '%.2f'
+            clabels = ax_delta.clabel(
+                CS, inline=True, fmt=fmt_str, manual=None, fontsize=contour_label_fontsize
+            )
+            plt.setp(clabels, path_effects=[path_effects.withStroke(linewidth=8, foreground='black')], color='white')
 
-        for ax in [ax_comp, ax_coll, ax_profit, ax_delta]:
+        for ax in [ax_comp, ax_coll, ax_delta]:
             ax.grid(False)
-        for ax in [ax_coll, ax_profit, ax_delta]:
+            ax.tick_params(axis='both', which='major', labelsize=26)
+            # Only denote representative values on y axis
+            ax.set_yticks(rep_Delta_ticks)
+            ax.set_yticklabels([f"{d:.2f}" for d in rep_Delta_ticks])
+        for ax in [ax_coll, ax_delta]:
+            ax.set_yticklabels([])
+        # Only show y-tick labels on the first column (competitive welfare)
+        axes[idx, 0].set_yticklabels([f"{d:.2f}" for d in rep_Delta_ticks])
+        for ax in [ax_coll, ax_delta]:
             ax.set_yticklabels([])
         if idx < num_m - 1:
             for ax in axes[idx, :]:
                 ax.set_xticklabels([])
 
-    axes[0, 0].set_title("Competitive Welfare", fontsize=18, pad=15)
-    axes[0, 1].set_title("Fully Collusive Welfare", fontsize=18, pad=15)
-    axes[0, 2].set_title("Total Cartel Profit Gain (Ratio)", fontsize=18, pad=15)
-    axes[0, 3].set_title("Critical Threshold", fontsize=18, pad=15)
-    fig.supylabel(r'$\Delta$ (Buy Box Bias)', fontsize=18, x=0.04)
-    fig.supxlabel(r'$\theta$ (Marginal Search Cost)', fontsize=18)
+    axes[0, 0].set_title("Competitive Welfare", fontsize=36, pad=22)
+    axes[0, 1].set_title("Fully Collusive Welfare", fontsize=36, pad=22)
+    axes[0, 2].set_title("Critical Threshold", fontsize=36, pad=22)
+    # Place y-axis label further left to avoid being close to m row labels
+    fig.supylabel(r'$\Delta$ (Buy Box Bias)', fontsize=36, x=y_label_x)
+    fig.supxlabel(r'$\theta$ (Marginal Search Cost)', fontsize=36)
 
     pad_value = 0.08 
-    cbar_welfare = fig.colorbar(comp_mappable, ax=axes[:, 0:2], location='bottom', shrink=0.8, aspect=40, pad=pad_value)
-    cbar_welfare.set_label("Normalized Welfare", fontsize=15)
+    cbar_welfare = fig.colorbar(
+        comp_mappable, ax=axes[:, 0:2], location='bottom', shrink=0.8, aspect=40, pad=pad_value
+    )
+    cbar_welfare.set_label("Normalized Welfare", fontsize=32)
+    cbar_welfare.ax.tick_params(labelsize=26)
     
-    cbar_profit = fig.colorbar(profit_mappable, ax=axes[:, 2], location='bottom', shrink=0.8, aspect=40, pad=pad_value, label="Total Collusive Profit / Total Competitive Profit")
-    cbar_delta = fig.colorbar(delta_mappable, ax=axes[:, 3], location='bottom', shrink=0.8, aspect=40, pad=pad_value)
-    cbar_delta.set_label("Critical Discount Factor", fontsize=15)
+    cbar_delta = fig.colorbar(
+        delta_mappable, ax=axes[:, 2], location='bottom', shrink=0.8, aspect=40, pad=pad_value
+    )
+    cbar_delta.set_label("Critical Discount Factor", fontsize=32)
+    cbar_delta.ax.tick_params(labelsize=26)
     
-    for cbar in [cbar_welfare, cbar_profit, cbar_delta]:
+    for cbar in [cbar_welfare, cbar_delta]:
         cbar.locator = MaxNLocator(nbins=5, prune='both')
         cbar.update_ticks()
     

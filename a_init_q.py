@@ -137,15 +137,15 @@ class ModelFixedBB:
             if quality_type == 'H':
                 min_price = cost
                 if position == 'in':
-                    max_price = 1.1 * p_H_in_monopoly
+                    max_price = 1.05 * p_H_in_monopoly
                 else:  # 'out'
-                    max_price = 1.1 * p_H_out_monopoly
+                    max_price = 1.05 * p_H_out_monopoly
             else:  # 'L'
                 min_price = 0.0
                 if position == 'in':
-                    max_price = 1.1 * p_L_in_monopoly
+                    max_price = 1.05 * p_L_in_monopoly
                 else:  # 'out'
-                    max_price = 1.1 * p_L_out_monopoly
+                    max_price = 1.05 * p_L_out_monopoly
 
             price_bounds[agent_id] = (min_price, max_price)
 
